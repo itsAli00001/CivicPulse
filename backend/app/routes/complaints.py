@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models.complaint import Complaint
 from app.repositories.complaint_repository import ComplaintRepository
-from app.schemas.complaint import ComplaintCreate
+from app.schemas.complaint import ComplaintCreate, ComplaintResponse
 from app.services.complaint_service import ComplaintService
 
 

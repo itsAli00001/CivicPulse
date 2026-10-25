@@ -1,4 +1,7 @@
+
 import re
+from uuid import UUID
+from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -23,7 +26,7 @@ class ComplaintCreate(BaseModel):
 
 
 class ComplaintResponse(BaseModel):
-    id: str
+    id: UUID
     text: str
     location: str
     reporter_contact: str | None = None
@@ -32,3 +35,5 @@ class ComplaintResponse(BaseModel):
     status: str
     ai_summary: str
     triaged_by: str
+
+    model_config = {"from_attributes": True}
