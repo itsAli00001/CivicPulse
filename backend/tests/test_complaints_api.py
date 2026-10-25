@@ -21,7 +21,7 @@ def test_create_complaint():
     data = response.json()
 
     assert "id" in data
-    assert data["category"] == "other"
+    assert data["category"] == "water"
     assert data["priority"] == "normal"
     assert data["status"] == "open"
     assert data["triaged_by"] == "rules"

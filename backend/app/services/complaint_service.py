@@ -2,6 +2,7 @@
 from uuid import UUID
 
 from app.models.complaint import Complaint
+from app.providers.triage_provider import RuleBasedTriage
 from app.repositories.complaint_repository import ComplaintRepository
 from app.schemas.complaint import ComplaintCreate
 
@@ -17,17 +18,20 @@ class ComplaintService:
 
     def __init__(self, repository: ComplaintRepository):
         self.repository = repository
+        self.triage_provider = RuleBasedTriage()
 
     def create_complaint(self, complaint: ComplaintCreate) -> Complaint:
+        triage_result = self.triage_provider.triage(complaint.text)
+
         complaint_model = Complaint(
             text=complaint.text,
             location=complaint.location,
             reporter_contact=complaint.reporter_contact,
-            category="other",
-            priority="normal",
+            category=triage_result.category,
+            priority=triage_result.priority,
             status="open",
-            ai_summary=complaint.text[:140],
-            triaged_by="rules",
+            ai_summary=triage_result.ai_summary,
+            triaged_by=triage_result.triaged_by,
         )
 
         return self.repository.create(complaint_model)
@@ -48,7 +52,9 @@ class ComplaintService:
         if complaint is None:
             return None
 
-        allowed_statuses = self.VALID_TRANSITIONS.get(complaint.status, set())
+        allowed_statuses = self.VALID_TRANSITIONS.get(
+            complaint.status, set()
+        )
 
         if new_status not in allowed_statuses:
             raise ValueError(
