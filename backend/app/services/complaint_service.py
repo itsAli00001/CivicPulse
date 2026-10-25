@@ -2,7 +2,7 @@
 from uuid import UUID
 
 from app.models.complaint import Complaint
-from app.providers.triage_provider import RuleBasedTriage
+from app.providers.triage_factory import get_triage_provider
 from app.repositories.complaint_repository import ComplaintRepository
 from app.schemas.complaint import ComplaintCreate
 
@@ -18,7 +18,7 @@ class ComplaintService:
 
     def __init__(self, repository: ComplaintRepository):
         self.repository = repository
-        self.triage_provider = RuleBasedTriage()
+        self.triage_provider = get_triage_provider()
 
     def create_complaint(self, complaint: ComplaintCreate) -> Complaint:
         triage_result = self.triage_provider.triage(complaint.text)

@@ -1,5 +1,6 @@
 
 from dataclasses import dataclass
+from typing import Protocol
 
 
 @dataclass
@@ -10,13 +11,12 @@ class TriageResult:
     triaged_by: str
 
 
-class TriageProvider:
+class TriageProvider(Protocol):
     def triage(self, text: str) -> TriageResult:
-        raise NotImplementedError
+        ...
 
 
-class RuleBasedTriage(TriageProvider):
-
+class RuleBasedTriage:
     def triage(self, text: str) -> TriageResult:
         text_lower = text.lower()
 
@@ -25,29 +25,23 @@ class RuleBasedTriage(TriageProvider):
             "lamp post", "streetlights"
         ]):
             category = "streetlights"
-
         elif any(word in text_lower for word in [
             "water", "pipe", "leak", "flooding"
         ]):
             category = "water"
-
         elif any(word in text_lower for word in [
             "electricity", "electric", "power outage",
             "power cut", "wiring", "electric wire"
         ]):
             category = "electricity"
-
         elif any(word in text_lower for word in [
             "road", "pothole", "pavement", "broken street"
         ]):
             category = "roads"
-
         elif any(word in text_lower for word in [
-            "garbage", "waste", "rubbish", "sewage",
-            "sanitation"
+            "garbage", "waste", "rubbish", "sewage", "sanitation"
         ]):
             category = "sanitation"
-
         else:
             category = "other"
 
@@ -66,4 +60,19 @@ class RuleBasedTriage(TriageProvider):
             priority=priority,
             ai_summary=text[:140],
             triaged_by="rules"
+        )
+
+
+class SimulatedTriage:
+    def __init__(self):
+        self.rule_provider = RuleBasedTriage()
+
+    def triage(self, text: str) -> TriageResult:
+        result = self.rule_provider.triage(text)
+
+        return TriageResult(
+            category=result.category,
+            priority=result.priority,
+            ai_summary=result.ai_summary,
+            triaged_by="simulated"
         )
