@@ -51,3 +51,28 @@ def test_get_complaints():
 
     assert response.status_code == 200
     assert isinstance(response.json(), list)
+
+def test_invalid_reporter_contact():
+    response = client.post(
+        "/api/complaints",
+        json={
+            "text": "There is a broken water pipe near our street.",
+            "location": "Islamabad Sector G-10",
+            "reporter_contact": "12345"
+        }
+    )
+
+    assert response.status_code == 422
+
+
+def test_valid_reporter_contact():
+    response = client.post(
+        "/api/complaints",
+        json={
+            "text": "There is a broken water pipe near our street.",
+            "location": "Islamabad Sector G-10",
+            "reporter_contact": "03001234567"
+        }
+    )
+
+    assert response.status_code == 200
