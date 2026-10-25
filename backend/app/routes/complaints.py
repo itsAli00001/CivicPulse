@@ -1,12 +1,11 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
-from app.models.complaint import Complaint
 from app.repositories.complaint_repository import ComplaintRepository
 from app.schemas.complaint import ComplaintCreate, ComplaintResponse
 from app.services.complaint_service import ComplaintService
@@ -39,7 +38,7 @@ def get_service(db: Session = Depends(get_db)):
     return ComplaintService(repository)
 
 
-@router.post("")
+@router.post("", response_model=ComplaintResponse)
 def create_complaint(
     complaint: ComplaintCreate,
     service: ComplaintService = Depends(get_service)
@@ -47,7 +46,7 @@ def create_complaint(
     return service.create_complaint(complaint)
 
 
-@router.get("/{complaint_id}")
+@router.get("/{complaint_id}", response_model=ComplaintResponse)
 def get_complaint(
     complaint_id: UUID,
     service: ComplaintService = Depends(get_service)
@@ -60,14 +59,23 @@ def get_complaint(
     return complaint
 
 
-@router.get("")
+@router.get("", response_model=list[ComplaintResponse])
 def get_complaints(
+    status: str | None = Query(default=None),
+    category: str | None = Query(default=None),
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     service: ComplaintService = Depends(get_service)
 ):
-    return service.get_complaints()
+    return service.get_complaints(
+        status=status,
+        category=category,
+        limit=limit,
+        offset=offset,
+    )
 
 
-@router.patch("/{complaint_id}/status")
+@router.patch("/{complaint_id}/status", response_model=ComplaintResponse)
 def update_complaint_status(
     complaint_id: UUID,
     update: ComplaintStatusUpdate,

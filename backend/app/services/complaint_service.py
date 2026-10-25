@@ -39,8 +39,19 @@ class ComplaintService:
     def get_complaint(self, complaint_id: UUID) -> Complaint | None:
         return self.repository.get_by_id(complaint_id)
 
-    def get_complaints(self) -> list[Complaint]:
-        return self.repository.get_all()
+    def get_complaints(
+        self,
+        status: str | None = None,
+        category: str | None = None,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> list[Complaint]:
+        return self.repository.get_all(
+            status=status,
+            category=category,
+            limit=limit,
+            offset=offset,
+        )
 
     def update_complaint_status(
         self,

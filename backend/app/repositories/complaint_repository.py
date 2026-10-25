@@ -24,8 +24,27 @@ class ComplaintRepository:
             .first()
         )
 
-    def get_all(self) -> list[Complaint]:
-        return self.db.query(Complaint).all()
+    def get_all(
+        self,
+        status: str | None = None,
+        category: str | None = None,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> list[Complaint]:
+        query = self.db.query(Complaint)
+
+        if status is not None:
+            query = query.filter(Complaint.status == status)
+
+        if category is not None:
+            query = query.filter(Complaint.category == category)
+
+        return (
+            query.order_by(Complaint.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
     def update_status(
         self,
