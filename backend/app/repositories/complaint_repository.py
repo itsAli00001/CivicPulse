@@ -1,3 +1,4 @@
+
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -25,3 +26,13 @@ class ComplaintRepository:
 
     def get_all(self) -> list[Complaint]:
         return self.db.query(Complaint).all()
+
+    def update_status(
+        self,
+        complaint: Complaint,
+        new_status: str
+    ) -> Complaint:
+        complaint.status = new_status
+        self.db.commit()
+        self.db.refresh(complaint)
+        return complaint
