@@ -1,4 +1,4 @@
-
+from app.cache.redis_client import invalidate_statistics_cache
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -30,7 +30,9 @@ def test_create_complaint():
     )
 
     assert response.status_code == 200
+
     data = response.json()
+
     assert "id" in data
     assert data["category"] == "water"
     assert data["priority"] == "normal"
@@ -43,7 +45,9 @@ def test_get_complaint():
         "There is a broken water pipe near our street."
     )
 
-    response = client.get(f"/api/complaints/{complaint['id']}")
+    response = client.get(
+        f"/api/complaints/{complaint['id']}"
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == complaint["id"]
@@ -105,6 +109,7 @@ def test_update_complaint_status_to_resolved():
         f"/api/complaints/{complaint['id']}/status",
         json={"status": "in_progress"}
     )
+
     assert first_response.status_code == 200
 
     response = client.patch(
@@ -159,10 +164,16 @@ def test_filter_complaints_by_status():
         "Street light is not working near our house."
     )
 
-    response = client.get("/api/complaints?status=open")
+    response = client.get(
+        "/api/complaints?status=open"
+    )
 
     assert response.status_code == 200
-    assert all(item["status"] == "open" for item in response.json())
+    assert all(
+        item["status"] == "open"
+        for item in response.json()
+    )
+
     assert any(
         item["id"] == complaint["id"]
         for item in response.json()
@@ -174,10 +185,16 @@ def test_filter_complaints_by_category():
         "There is a broken water pipe near our street."
     )
 
-    response = client.get("/api/complaints?category=water")
+    response = client.get(
+        "/api/complaints?category=water"
+    )
 
     assert response.status_code == 200
-    assert all(item["category"] == "water" for item in response.json())
+    assert all(
+        item["category"] == "water"
+        for item in response.json()
+    )
+
     assert any(
         item["id"] == complaint["id"]
         for item in response.json()
@@ -190,7 +207,9 @@ def test_limit_complaints():
             f"There is a broken water pipe near street number {index}."
         )
 
-    response = client.get("/api/complaints?limit=2")
+    response = client.get(
+        "/api/complaints?limit=2"
+    )
 
     assert response.status_code == 200
     assert len(response.json()) <= 2
@@ -202,21 +221,77 @@ def test_offset_complaints():
             f"There is a broken water pipe near street number {index}."
         )
 
-    first_page = client.get("/api/complaints?limit=2&offset=0")
-    second_page = client.get("/api/complaints?limit=2&offset=2")
+    first_page = client.get(
+        "/api/complaints?limit=2&offset=0"
+    )
+
+    second_page = client.get(
+        "/api/complaints?limit=2&offset=2"
+    )
 
     assert first_page.status_code == 200
     assert second_page.status_code == 200
 
-    first_ids = {item["id"] for item in first_page.json()}
-    second_ids = {item["id"] for item in second_page.json()}
+    first_ids = {
+        item["id"]
+        for item in first_page.json()
+    }
+
+    second_ids = {
+        item["id"]
+        for item in second_page.json()
+    }
 
     assert first_ids.isdisjoint(second_ids)
 
 
 def test_reject_invalid_pagination_values():
-    response = client.get("/api/complaints?limit=0")
+    response = client.get(
+        "/api/complaints?limit=0"
+    )
+
     assert response.status_code == 422
 
-    response = client.get("/api/complaints?offset=-1")
+    response = client.get(
+        "/api/complaints?offset=-1"
+    )
+
     assert response.status_code == 422
+
+
+def test_get_statistics():
+    invalidate_statistics_cache()
+
+    response = client.get("/api/statistics")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "total" in data
+    assert "by_category" in data
+    assert "by_status" in data
+
+    assert isinstance(data["total"], int)
+    assert isinstance(data["by_category"], dict)
+    assert isinstance(data["by_status"], dict)
+
+    invalidate_statistics_cache()
+
+
+def test_statistics_cache():
+    invalidate_statistics_cache()
+
+    first_response = client.get("/api/statistics")
+
+    assert first_response.status_code == 200
+    assert first_response.headers.get("x-cache") == "MISS"
+
+    second_response = client.get("/api/statistics")
+
+    assert second_response.status_code == 200
+    assert second_response.headers.get("x-cache") == "HIT"
+
+    assert first_response.json() == second_response.json()
+
+    invalidate_statistics_cache()
