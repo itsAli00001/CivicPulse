@@ -1,4 +1,6 @@
+
 from dataclasses import dataclass
+from typing import Protocol
 
 
 @dataclass
@@ -9,30 +11,68 @@ class TriageResult:
     triaged_by: str
 
 
-class TriageProvider:
+class TriageProvider(Protocol):
     def triage(self, text: str) -> TriageResult:
-        raise NotImplementedError
+        ...
 
-class RuleBasedTriage(TriageProvider):
+
+class RuleBasedTriage:
     def triage(self, text: str) -> TriageResult:
         text_lower = text.lower()
 
-        if "water" in text_lower or "pipe" in text_lower:
-            category = "water"
-        elif "electric" in text_lower or "power" in text_lower:
-            category = "electricity"
-        elif "road" in text_lower or "pothole" in text_lower:
-            category = "roads"
-        elif "garbage" in text_lower or "waste" in text_lower:
-            category = "sanitation"
-        elif "light" in text_lower:
+        if any(word in text_lower for word in [
+            "street light", "streetlight", "street lamp",
+            "lamp post", "streetlights"
+        ]):
             category = "streetlights"
+        elif any(word in text_lower for word in [
+            "water", "pipe", "leak", "flooding"
+        ]):
+            category = "water"
+        elif any(word in text_lower for word in [
+            "electricity", "electric", "power outage",
+            "power cut", "wiring", "electric wire"
+        ]):
+            category = "electricity"
+        elif any(word in text_lower for word in [
+            "road", "pothole", "pavement", "broken street"
+        ]):
+            category = "roads"
+        elif any(word in text_lower for word in [
+            "garbage", "waste", "rubbish", "sewage", "sanitation"
+        ]):
+            category = "sanitation"
         else:
             category = "other"
 
+        urgent_words = [
+            "urgent", "emergency", "dangerous",
+            "exposed wire", "burst pipe", "severe flooding"
+        ]
+
+        if any(word in text_lower for word in urgent_words):
+            priority = "high"
+        else:
+            priority = "normal"
+
         return TriageResult(
             category=category,
-            priority="normal",
+            priority=priority,
             ai_summary=text[:140],
             triaged_by="rules"
+        )
+
+
+class SimulatedTriage:
+    def __init__(self):
+        self.rule_provider = RuleBasedTriage()
+
+    def triage(self, text: str) -> TriageResult:
+        result = self.rule_provider.triage(text)
+
+        return TriageResult(
+            category=result.category,
+            priority=result.priority,
+            ai_summary=result.ai_summary,
+            triaged_by="simulated"
         )
